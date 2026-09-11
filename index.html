@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>FACS Antibody Manager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <h1>FACS Antibody Manager</h1>
+    <p>研究室のFACS抗体を管理するアプリです。</p>
+
+    <h2>抗体一覧</h2>
+<input type="text" id="search-input" placeholder="抗体名を検索">
+<select id="color-filter">
+    <option value="">蛍光色を選択</option>
+    <option value="BV421">BV421</option>
+    <option value="APC">APC</option>
+    <option value="PE">PE</option>
+    <option value="FITC">FITC</option>
+    <option value="BV510">BV510</option>
+    <option value="BV605">BV605</option>
+    <option value="BV711">BV711</option>
+    <option value="BV786">BV786</option>
+    <option value="PerCP-Cy5.5">PerCP-Cy5.5</option>
+    <option value="PE-Cy7">PE-Cy7</option>
+    <option value="APC-Cy7">APC-Cy7</option>
+    <option value="その他">その他</option>
+</select>
+
+<button id="add-antibody-button">＋ 抗体を追加</button>
+<button type="button" id="open-panel-button">
+    ＋ パネルを作成
+</button>
+<div id="panel-form" style="display: none;">
+    <h3>パネルを作成</h3>
+
+    <input type="text" id="panel-name" placeholder="パネル名">
+<h4>抗体を選択</h4>
+
+    <div id="panel-antibody-list">
+    </div>
+    <button type="button" id="save-panel-button">保存</button>
+</div>
+
+<div id="add-form" style="display: none;">
+    <h3>抗体を追加</h3>
+
+    <input type="text" id="new-name" placeholder="抗体名">
+
+    <select id="new-color">
+        <option value="">蛍光色を選択</option>
+        <option value="BV421">BV421</option>
+        <option value="APC">APC</option>
+        <option value="PE">PE</option>
+        <option value="FITC">FITC</option>
+        <option value="BV510">BV510</option>
+        <option value="BV605">BV605</option>
+        <option value="BV711">BV711</option>
+        <option value="BV786">BV786</option>
+        <option value="PerCP-Cy5.5">PerCP-Cy5.5</option>
+        <option value="PE-Cy7">PE-Cy7</option>
+        <option value="APC-Cy7">APC-Cy7</option>
+        <option value="その他">その他</option>
+    </select>
+    <input
+    type="text"
+    id="custom-color"
+    placeholder="蛍光色を入力"
+    style="display: none;"
+>
+
+    <input type="text" id="new-maker" placeholder="メーカー">
+
+    <input type="text" id="new-catalog" placeholder="製品番号">
+
+    <select id="new-stock">
+        <option value="あり">在庫あり</option>
+        <option value="なし">在庫なし</option>
+    </select>
+
+    <button type="button" id="save-antibody-button">追加</button>
+</div>
+    <table>
+    <thead>
+        <tr>
+            <th>抗体名</th>
+            <th>蛍光色</th>
+            <th>メーカー</th>
+            <th>製品番号</th>
+            <th>在庫</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+
+    <tbody id="antibody-table">
+    </tbody>
+</table>
+
+</body>
+<script src="app.js"></script>
+</html>

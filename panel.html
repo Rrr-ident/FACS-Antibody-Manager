@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>パネル管理</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h1>FACS Antibody Manager</h1>
+
+    <h2>パネル管理</h2>
+
+    <button type="button" id="back-button">
+        ← 抗体一覧に戻る
+    </button>
+
+    <button type="button" id="create-panel-button">
+        ＋ パネルを作成
+    </button>
+
+    <div id="panel-form" style="display: none;">
+
+    <h3>パネルを作成</h3>
+
+    <input type="text" id="panel-name" placeholder="パネル名">
+
+    <h4>抗体を選択</h4>
+
+    <div id="panel-antibody-list">
+    </div>
+
+    <button type="button" id="save-panel-button">
+        保存
+    </button>
+
+</div>
+    <h3>保存したパネル</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>パネル名</th>
+                <th>抗体</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+
+        <tbody id="panel-table"></tbody>
+    </table>
+    <script src="app.js"></script>
+<script>
+    document.getElementById("back-button").addEventListener("click", function() {
+        window.location.href = "index.html";
+    });
+</script>
+</body>
+</html>
