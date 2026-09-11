@@ -1,422 +1,1152 @@
 console.log("Hello from JavaScript!");
 
-// ====================
-// 抗体データ
-// ====================
+const SUPABASE_URL = "https://vmkuanuetcuowxlqxxrz.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_4Bj9nqcwIHQilsFXMoJonQ_SvXI2RTA";
 
-const savedAntibodies = localStorage.getItem("antibodies");
-
-const antibodies = savedAntibodies
-    ? JSON.parse(savedAntibodies)
-    : [
-        {
-            name: "CD45",
-            color: "BV421",
-            maker: "BioLegend",
-            catalog: "103134",
-            stock: "なし"
-        },
-        {
-            name: "CD3",
-            color: "APC",
-            maker: "BioLegend",
-            catalog: "100236",
-            stock: "あり"
-        },
-        {
-            name: "CD4",
-            color: "PE",
-            maker: "BD",
-            catalog: "553730",
-            stock: "あり"
-        },
-        {
-            name: "CD8a",
-            color: "FITC",
-            maker: "BioLegend",
-            catalog: "100706",
-            stock: "あり"
-        }
-    ];
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+);
 
 
 // ====================
-// 抗体一覧
+// 共通データ
 // ====================
 
-const table = document.getElementById("antibody-table");
+let antibodies = [];
+let panels = [];
 
 let editingAntibody = null;
-
-const searchInput = document.getElementById("search-input");
-const colorFilter = document.getElementById("color-filter");
-
-function displayAntibodies() {
-    const keyword = searchInput.value;
-    const selectedColor = colorFilter.value;
-
-    const filteredAntibodies = antibodies
-    .filter(function(antibody) {
-        const matchesKeyword =
-            antibody.name.includes(keyword) ||
-            antibody.color.includes(keyword);
-
-        const standardColors = [
-    "BV421",
-    "APC",
-    "PE",
-    "FITC",
-    "BV510",
-    "BV605",
-    "BV711",
-    "BV786",
-    "PerCP-Cy5.5",
-    "PE-Cy7",
-    "APC-Cy7"
-];
-
-const matchesColor =
-    selectedColor === "" ||
-    antibody.color === selectedColor ||
-    (selectedColor === "その他" &&
-        !standardColors.includes(antibody.color));
-
-        return matchesKeyword && matchesColor;
-    })
-    .sort(function(a, b) {
-        return a.name.localeCompare(b.name);
-    });
-
-    table.innerHTML = "";
-
-    filteredAntibodies.forEach(function(antibody) {
-        const row = document.createElement("tr");
-
-        row.innerHTML = `
-            <td>${antibody.name}</td>
-            <td>${antibody.color}</td>
-            <td>${antibody.maker}</td>
-            <td>${antibody.catalog}</td>
-            <td>${antibody.stock}</td>
-            <td>
-                <button class="edit-button">編集</button>
-                <button class="delete-button">削除</button>
-            </td>
-        `;
-
-        // 在庫なしを赤字にする
-        if (antibody.stock === "なし") {
-            row.classList.add("out-of-stock");
-        }
-
-        // 削除ボタン
-        const deleteButton = row.querySelector(".delete-button");
-
-        deleteButton.addEventListener("click", function() {
-            const index = antibodies.indexOf(antibody);
-
-            antibodies.splice(index, 1);
-
-            saveAntibodies();
-
-            displayAntibodies();
-        });
-
-        // 編集ボタン
-        const editButton = row.querySelector(".edit-button");
-
-        editButton.addEventListener("click", function() {
-            editingAntibody = antibody;
-
-            document.getElementById("new-name").value = antibody.name;
-            document.getElementById("new-color").value = antibody.color;
-            document.getElementById("new-maker").value = antibody.maker;
-            document.getElementById("new-catalog").value = antibody.catalog;
-            document.getElementById("new-stock").value = antibody.stock;
-
-            document.getElementById("save-antibody-button").textContent = "保存";
-
-            addForm.style.display = "block";
-        });
-
-        table.appendChild(row);
-    });
-}
-
-if (searchInput && colorFilter) {
-    searchInput.addEventListener("input", displayAntibodies);
-    colorFilter.addEventListener("change", displayAntibodies);
-
-    displayAntibodies();
-}
+let editingPanel = null;
 
 
 // ====================
-// 抗体追加フォーム
+// HTML要素
 // ====================
 
-const addButton = document.getElementById("add-antibody-button");
-const addForm = document.getElementById("add-form");
+// 抗体一覧ページ
+const table =
+    document.getElementById("antibody-table");
 
-const newColor = document.getElementById("new-color");
-const customColor = document.getElementById("custom-color");
+const searchInput =
+    document.getElementById("search-input");
 
-if (newColor && customColor) {
-    newColor.addEventListener("change", function() {
-        if (newColor.value === "その他") {
-            customColor.style.display = "inline-block";
-        } else {
-            customColor.style.display = "none";
-            customColor.value = "";
-        }
-    });
-}
+const colorFilter =
+    document.getElementById("color-filter");
 
-if (addButton && addForm) {
-    addButton.addEventListener("click", function() {
-        addForm.style.display = "block";
-    });
-}
+const addButton =
+    document.getElementById("add-antibody-button");
 
+const addForm =
+    document.getElementById("add-form");
 
-// ====================
-// 抗体の追加・編集保存
-// ====================
+const newColor =
+    document.getElementById("new-color");
 
-const saveButton = document.getElementById("save-antibody-button");
+const customColor =
+    document.getElementById("custom-color");
 
-if (saveButton) {
-    saveButton.addEventListener("click", function() {
-    const selectedColor = document.getElementById("new-color").value;
-
-const newAntibody = {
-    name: document.getElementById("new-name").value,
-    color: selectedColor === "その他"
-        ? document.getElementById("custom-color").value
-        : selectedColor,
-    maker: document.getElementById("new-maker").value,
-    catalog: document.getElementById("new-catalog").value,
-    stock: document.getElementById("new-stock").value
-};
-    if (newAntibody.name === "") {
-    alert("抗体名を入力してください。");
-    return;
-}
-
-if (newAntibody.color === "") {
-    alert("蛍光色を選択してください。");
-    return;
-}
-
-if (newAntibody.maker === "") {
-    alert("メーカーを入力してください。");
-    return;
-}
-
-if (newAntibody.catalog === "") {
-    alert("カタログ番号を入力してください。");
-    return;
-}
-const duplicate = antibodies.some(function(antibody) {
-    return (
-        antibody !== editingAntibody &&
-            antibody.name === newAntibody.name &&
-            antibody.color === newAntibody.color &&
-            antibody.maker === newAntibody.maker &&
-            antibody.catalog === newAntibody.catalog
-        );
-    });
-
-    if (duplicate) {
-        alert("この抗体はすでに登録されています。");
-        return;
-    }
-
-    if (editingAntibody === null) {
-
-        // 新規追加
-        antibodies.push(newAntibody);
-
-    } else {
-
-        // 編集
-        editingAntibody.name = newAntibody.name;
-        editingAntibody.color = newAntibody.color;
-        editingAntibody.maker = newAntibody.maker;
-        editingAntibody.catalog = newAntibody.catalog;
-        editingAntibody.stock = newAntibody.stock;
-
-        editingAntibody = null;
-
-        saveButton.textContent = "追加";
-    }
-
-    saveAntibodies();
-
-    // 検索条件をリセット
-    searchInput.value = "";
-    colorFilter.value = "";
-
-    // フォームを閉じる
-    addForm.style.display = "none";
-
-    // 一覧を更新
-    displayAntibodies();
-});
-}
-
-
-// ====================
-// 抗体をlocalStorageに保存
-// ====================
-
-function saveAntibodies() {
-    localStorage.setItem("antibodies", JSON.stringify(antibodies));
-}
-
-
-// ====================
-// パネル
-// ====================
+const saveButton =
+    document.getElementById("save-antibody-button");
 
 const openPanelButton =
     document.getElementById("open-panel-button");
 
-if (openPanelButton) {
-    openPanelButton.addEventListener("click", function() {
-        window.location.href = "panel.html";
-    });
-}
-const panelForm = document.getElementById("panel-form");
-const panelAntibodyList = document.getElementById("panel-antibody-list");
 
-const panelTable = document.getElementById("panel-table");
-const panelNameInput = document.getElementById("panel-name");
-const savePanelButton = document.getElementById("save-panel-button");
+// パネルページ
+const panelForm =
+    document.getElementById("panel-form");
 
+const panelAntibodyList =
+    document.getElementById("panel-antibody-list");
 
-// ====================
-// パネルデータをlocalStorageから読み込む
-// ====================
+const panelTable =
+    document.getElementById("panel-table");
 
-const savedPanels = localStorage.getItem("panels");
+const panelNameInput =
+    document.getElementById("panel-name");
 
-const panels = savedPanels
-    ? JSON.parse(savedPanels)
-    : [];
-
-    let editingPanel = null;
-
-// ====================
-// パネル新規作成
-// ====================
+const savePanelButton =
+    document.getElementById("save-panel-button");
 
 const createPanelButton =
     document.getElementById("create-panel-button");
 
-if (createPanelButton) {
 
-    createPanelButton.addEventListener("click", function() {
+// ====================
+// 抗体データをSupabaseから取得
+// ====================
 
-        // 新規作成なので編集状態を解除
-        editingPanel = null;
+async function loadAntibodies() {
 
-        // パネル名を空にする
-        panelNameInput.value = "";
+    const { data, error } = await supabaseClient
+        .from("antibodies")
+        .select("*")
+        .order("name", { ascending: true });
 
-        // 抗体選択欄を作り直す
-        panelAntibodyList.innerHTML = "";
+    if (error) {
+        console.error(
+            "抗体データの読み込みエラー:",
+            error
+        );
+        return;
+    }
 
-        antibodies.forEach(function(antibody) {
+    antibodies = data;
 
-            const label = document.createElement("label");
+    if (table) {
+        displayAntibodies();
+    }
 
-            label.innerHTML = `
-                <input type="checkbox" value="${antibody.name}">
-                ${antibody.name} (${antibody.color})
+    // panel.htmlを開いている場合、
+    // 抗体データ取得後にパネル用選択肢にも使える
+}
+
+
+// ====================
+// パネルデータをSupabaseから取得
+// ====================
+
+async function loadPanels() {
+
+    const { data, error } = await supabaseClient
+        .from("panels")
+        .select("*")
+        .order("name", { ascending: true });
+
+    if (error) {
+        console.error(
+            "パネルデータの読み込みエラー:",
+            error
+        );
+        return;
+    }
+
+    panels = data;
+
+    if (panelTable) {
+        displayPanels();
+    }
+}
+
+
+// ====================
+// 抗体一覧表示
+// ====================
+
+function displayAntibodies() {
+
+    if (
+        !table ||
+        !searchInput ||
+        !colorFilter
+    ) {
+        return;
+    }
+
+    const keyword =
+        searchInput.value.trim().toLowerCase();
+
+    const selectedColor =
+        colorFilter.value;
+
+
+    const standardColors = [
+        "BV421",
+        "APC",
+        "PE",
+        "FITC",
+        "BV510",
+        "BV605",
+        "BV711",
+        "BV786",
+        "PerCP-Cy5.5",
+        "PE-Cy7",
+        "APC-Cy7"
+    ];
+
+
+    const filteredAntibodies =
+        antibodies
+
+            .filter(function(antibody) {
+
+                const name =
+                    antibody.name
+                        .toLowerCase();
+
+                const color =
+                    antibody.color
+                        .toLowerCase();
+
+
+                const matchesKeyword =
+                    name.includes(keyword) ||
+                    color.includes(keyword);
+
+
+                const matchesColor =
+                    selectedColor === "" ||
+
+                    antibody.color ===
+                        selectedColor ||
+
+                    (
+                        selectedColor ===
+                            "その他" &&
+
+                        !standardColors.includes(
+                            antibody.color
+                        )
+                    );
+
+
+                return (
+                    matchesKeyword &&
+                    matchesColor
+                );
+            })
+
+            .sort(function(a, b) {
+
+                return a.name.localeCompare(
+                    b.name
+                );
+            });
+
+
+    table.innerHTML = "";
+
+
+    filteredAntibodies.forEach(
+        function(antibody) {
+
+            const row =
+                document.createElement("tr");
+
+
+            row.innerHTML = `
+                <td>${antibody.name}</td>
+                <td>${antibody.color}</td>
+                <td>${antibody.maker}</td>
+                <td>${antibody.catalog}</td>
+                <td>${antibody.stock}</td>
+
+                <td>
+                    <button
+                        type="button"
+                        class="edit-button"
+                    >
+                        編集
+                    </button>
+
+                    <button
+                        type="button"
+                        class="delete-button"
+                    >
+                        削除
+                    </button>
+                </td>
             `;
 
-            // 在庫なしを赤字にする
-            if (antibody.stock === "なし") {
-                label.classList.add("out-of-stock");
+
+            // 在庫なしを赤字
+            if (
+                antibody.stock === "なし"
+            ) {
+
+                row.classList.add(
+                    "out-of-stock"
+                );
             }
 
-            panelAntibodyList.appendChild(label);
+
+            // ====================
+            // 抗体編集
+            // ====================
+
+            const editButton =
+                row.querySelector(
+                    ".edit-button"
+                );
+
+
+            editButton.addEventListener(
+                "click",
+                function() {
+
+                    editingAntibody =
+                        antibody;
+
+
+                    document.getElementById(
+                        "new-name"
+                    ).value =
+                        antibody.name;
+
+
+                    const standardColors = [
+                        "BV421",
+                        "APC",
+                        "PE",
+                        "FITC",
+                        "BV510",
+                        "BV605",
+                        "BV711",
+                        "BV786",
+                        "PerCP-Cy5.5",
+                        "PE-Cy7",
+                        "APC-Cy7"
+                    ];
+
+
+                    if (
+                        standardColors.includes(
+                            antibody.color
+                        )
+                    ) {
+
+                        newColor.value =
+                            antibody.color;
+
+                        customColor.style.display =
+                            "none";
+
+                        customColor.value = "";
+
+                    } else {
+
+                        newColor.value =
+                            "その他";
+
+                        customColor.style.display =
+                            "inline-block";
+
+                        customColor.value =
+                            antibody.color;
+                    }
+
+
+                    document.getElementById(
+                        "new-maker"
+                    ).value =
+                        antibody.maker;
+
+
+                    document.getElementById(
+                        "new-catalog"
+                    ).value =
+                        antibody.catalog;
+
+
+                    document.getElementById(
+                        "new-stock"
+                    ).value =
+                        antibody.stock;
+
+
+                    saveButton.textContent =
+                        "保存";
+
+
+                    addForm.style.display =
+                        "block";
+                }
+            );
+
+
+            // ====================
+            // 抗体削除
+            // ====================
+
+            const deleteButton =
+                row.querySelector(
+                    ".delete-button"
+                );
+
+
+            deleteButton.addEventListener(
+                "click",
+                async function() {
+
+                    const { error } =
+                        await supabaseClient
+
+                            .from(
+                                "antibodies"
+                            )
+
+                            .delete()
+
+                            .eq(
+                                "id",
+                                antibody.id
+                            );
+
+
+                    if (error) {
+
+                        console.error(
+                            "抗体削除エラー:",
+                            error
+                        );
+
+                        alert(
+                            "抗体の削除に失敗しました。"
+                        );
+
+                        return;
+                    }
+
+
+                    antibodies =
+                        antibodies.filter(
+                            function(item) {
+
+                                return (
+                                    item.id !==
+                                    antibody.id
+                                );
+                            }
+                        );
+
+
+                    displayAntibodies();
+                }
+            );
+
+
+            table.appendChild(row);
+        }
+    );
+}
+
+
+// ====================
+// 抗体検索
+// ====================
+
+if (
+    searchInput &&
+    colorFilter
+) {
+
+    searchInput.addEventListener(
+        "input",
+        displayAntibodies
+    );
+
+
+    colorFilter.addEventListener(
+        "change",
+        displayAntibodies
+    );
+}
+
+
+// ====================
+// 抗体追加フォームを開く
+// ====================
+
+if (
+    addButton &&
+    addForm
+) {
+
+    addButton.addEventListener(
+        "click",
+        function() {
+
+            editingAntibody = null;
+
+            document.getElementById(
+                "new-name"
+            ).value = "";
+
+            newColor.value = "";
+
+            customColor.value = "";
+
+            customColor.style.display =
+                "none";
+
+            document.getElementById(
+                "new-maker"
+            ).value = "";
+
+            document.getElementById(
+                "new-catalog"
+            ).value = "";
+
+            document.getElementById(
+                "new-stock"
+            ).value = "あり";
+
+            saveButton.textContent =
+                "追加";
+
+            addForm.style.display =
+                "block";
+        }
+    );
+}
+
+
+// ====================
+// 「その他」の蛍光色
+// ====================
+
+if (
+    newColor &&
+    customColor
+) {
+
+    newColor.addEventListener(
+        "change",
+        function() {
+
+            if (
+                newColor.value ===
+                "その他"
+            ) {
+
+                customColor.style.display =
+                    "inline-block";
+
+            } else {
+
+                customColor.style.display =
+                    "none";
+
+                customColor.value = "";
+            }
+        }
+    );
+}
+
+
+// ====================
+// 抗体追加・編集保存
+// ====================
+
+if (saveButton) {
+
+    saveButton.addEventListener(
+        "click",
+        async function() {
+
+            const selectedColor =
+                newColor.value;
+
+
+            const newAntibody = {
+
+                name:
+                    document
+                        .getElementById(
+                            "new-name"
+                        )
+                        .value
+                        .trim(),
+
+                color:
+                    selectedColor ===
+                        "その他"
+
+                        ? customColor
+                            .value
+                            .trim()
+
+                        : selectedColor,
+
+                maker:
+                    document
+                        .getElementById(
+                            "new-maker"
+                        )
+                        .value
+                        .trim(),
+
+                catalog:
+                    document
+                        .getElementById(
+                            "new-catalog"
+                        )
+                        .value
+                        .trim(),
+
+                stock:
+                    document
+                        .getElementById(
+                            "new-stock"
+                        )
+                        .value
+            };
+
+
+            // ====================
+            // 入力チェック
+            // ====================
+
+            if (
+                newAntibody.name === ""
+            ) {
+
+                alert(
+                    "抗体名を入力してください。"
+                );
+
+                return;
+            }
+
+
+            if (
+                newAntibody.color === ""
+            ) {
+
+                alert(
+                    "蛍光色を選択してください。"
+                );
+
+                return;
+            }
+
+
+            if (
+                newAntibody.maker === ""
+            ) {
+
+                alert(
+                    "メーカーを入力してください。"
+                );
+
+                return;
+            }
+
+
+            if (
+                newAntibody.catalog === ""
+            ) {
+
+                alert(
+                    "カタログ番号を入力してください。"
+                );
+
+                return;
+            }
+
+
+            // ====================
+            // 重複チェック
+            // ====================
+
+            const duplicate =
+                antibodies.some(
+                    function(antibody) {
+
+                        return (
+                            antibody.id !==
+                                editingAntibody?.id &&
+
+                            antibody.name ===
+                                newAntibody.name &&
+
+                            antibody.color ===
+                                newAntibody.color &&
+
+                            antibody.maker ===
+                                newAntibody.maker &&
+
+                            antibody.catalog ===
+                                newAntibody.catalog
+                        );
+                    }
+                );
+
+
+            if (duplicate) {
+
+                alert(
+                    "この抗体はすでに登録されています。"
+                );
+
+                return;
+            }
+
+
+            // ====================
+            // 新規追加
+            // ====================
+
+            if (
+                editingAntibody === null
+            ) {
+
+                const { data, error } =
+                    await supabaseClient
+
+                        .from(
+                            "antibodies"
+                        )
+
+                        .insert([
+                            newAntibody
+                        ])
+
+                        .select();
+
+
+                if (error) {
+
+                    console.error(
+                        "抗体追加エラー:",
+                        error
+                    );
+
+                    alert(
+                        "抗体の追加に失敗しました。"
+                    );
+
+                    return;
+                }
+
+
+                antibodies.push(
+                    data[0]
+                );
+
+            } else {
+
+                // ====================
+                // 編集
+                // ====================
+
+                const { data, error } =
+                    await supabaseClient
+
+                        .from(
+                            "antibodies"
+                        )
+
+                        .update(
+                            newAntibody
+                        )
+
+                        .eq(
+                            "id",
+                            editingAntibody.id
+                        )
+
+                        .select();
+
+
+                if (error) {
+
+                    console.error(
+                        "抗体編集エラー:",
+                        error
+                    );
+
+                    alert(
+                        "抗体の編集に失敗しました。"
+                    );
+
+                    return;
+                }
+
+
+                const updatedAntibody =
+                    data[0];
+
+
+                const index =
+                    antibodies.findIndex(
+                        function(antibody) {
+
+                            return (
+                                antibody.id ===
+                                updatedAntibody.id
+                            );
+                        }
+                    );
+
+
+                if (index !== -1) {
+
+                    antibodies[index] =
+                        updatedAntibody;
+                }
+
+
+                editingAntibody = null;
+
+                saveButton.textContent =
+                    "追加";
+            }
+
+
+            // 検索条件リセット
+            searchInput.value = "";
+            colorFilter.value = "";
+
+
+            // フォームを閉じる
+            addForm.style.display =
+                "none";
+
+
+            displayAntibodies();
+        }
+    );
+}
+
+
+// ====================
+// パネルページへ移動
+// ====================
+
+if (openPanelButton) {
+
+    openPanelButton.addEventListener(
+        "click",
+        function() {
+
+            window.location.href =
+                "panel.html";
+        }
+    );
+}
+
+
+// ====================
+// パネル選択欄を作成
+// ====================
+
+function buildPanelAntibodyList(
+    selectedAntibodies = []
+) {
+
+    if (!panelAntibodyList) {
+        return;
+    }
+
+
+    panelAntibodyList.innerHTML = "";
+
+
+    antibodies.forEach(
+        function(antibody) {
+
+            const label =
+                document.createElement(
+                    "label"
+                );
+
+
+            label.innerHTML = `
+                <input
+                    type="checkbox"
+                    value="${antibody.id}"
+                >
+                ${antibody.name}
+                (${antibody.color})
+            `;
+
+
+            const checkbox =
+                label.querySelector(
+                    "input"
+                );
+
+
+            const isSelected =
+                selectedAntibodies.some(
+                    function(
+                        selectedAntibody
+                    ) {
+
+                        return (
+                            selectedAntibody.name ===
+                                antibody.name &&
+
+                            selectedAntibody.color ===
+                                antibody.color
+                        );
+                    }
+                );
+
+
+            checkbox.checked =
+                isSelected;
+
+
+            if (
+                antibody.stock === "なし"
+            ) {
+
+                label.classList.add(
+                    "out-of-stock"
+                );
+            }
+
 
             panelAntibodyList.appendChild(
-                document.createElement("br")
+                label
             );
-        });
 
-        // フォームを表示
-        panelForm.style.display = "block";
-    });
+            panelAntibodyList.appendChild(
+                document.createElement(
+                    "br"
+                )
+            );
+        }
+    );
 }
+
+
+// ====================
+// 新規パネル
+// ====================
+
+if (createPanelButton) {
+
+    createPanelButton.addEventListener(
+        "click",
+        function() {
+
+            editingPanel = null;
+
+            panelNameInput.value = "";
+
+            buildPanelAntibodyList();
+
+            panelForm.style.display =
+                "block";
+        }
+    );
+}
+
 
 // ====================
 // パネル保存
 // ====================
 
-savePanelButton.addEventListener("click", function() {
+if (
+    savePanelButton &&
+    panelNameInput &&
+    panelAntibodyList
+) {
 
-    const panelName = panelNameInput.value;
+    savePanelButton.addEventListener(
+        "click",
+        async function() {
 
-    const selectedAntibodies = [];
+            const panelName =
+                panelNameInput
+                    .value
+                    .trim();
 
-    const checkedBoxes =
-        panelAntibodyList.querySelectorAll(
-            'input[type="checkbox"]:checked'
-        );
 
-    checkedBoxes.forEach(function(checkbox) {
+            if (panelName === "") {
 
-        const antibody = antibodies.find(function(antibody) {
-            return antibody.name === checkbox.value;
-        });
+                alert(
+                    "パネル名を入力してください。"
+                );
 
-        if (antibody) {
-            selectedAntibodies.push(antibody);
+                return;
+            }
+
+
+            const selectedAntibodies =
+                [];
+
+
+            const checkedBoxes =
+                panelAntibodyList
+                    .querySelectorAll(
+                        'input[type="checkbox"]:checked'
+                    );
+
+
+            checkedBoxes.forEach(
+                function(checkbox) {
+
+                    const antibodyId =
+                        Number(
+                            checkbox.value
+                        );
+
+
+                    const antibody =
+                        antibodies.find(
+                            function(
+                                antibody
+                            ) {
+
+                                return (
+                                    antibody.id ===
+                                    antibodyId
+                                );
+                            }
+                        );
+
+
+                    if (antibody) {
+
+                        // 保存時点のスナップショット
+                        selectedAntibodies.push({
+                            name:
+                                antibody.name,
+
+                            color:
+                                antibody.color,
+
+                            maker:
+                                antibody.maker,
+
+                            catalog:
+                                antibody.catalog,
+
+                            stock:
+                                antibody.stock
+                        });
+                    }
+                }
+            );
+
+
+            // ====================
+            // 新規パネル
+            // ====================
+
+            if (
+                editingPanel === null
+            ) {
+
+                const newPanel = {
+
+                    name:
+                        panelName,
+
+                    antibodies:
+                        selectedAntibodies
+                };
+
+
+                const { data, error } =
+                    await supabaseClient
+
+                        .from(
+                            "panels"
+                        )
+
+                        .insert([
+                            newPanel
+                        ])
+
+                        .select();
+
+
+                if (error) {
+
+                    console.error(
+                        "パネル追加エラー:",
+                        error
+                    );
+
+                    alert(
+                        "パネルの保存に失敗しました。"
+                    );
+
+                    return;
+                }
+
+
+                panels.push(
+                    data[0]
+                );
+
+            } else {
+
+                // ====================
+                // パネル編集
+                // ====================
+
+                const { data, error } =
+                    await supabaseClient
+
+                        .from(
+                            "panels"
+                        )
+
+                        .update({
+
+                            name:
+                                panelName,
+
+                            antibodies:
+                                selectedAntibodies
+                        })
+
+                        .eq(
+                            "id",
+                            editingPanel.id
+                        )
+
+                        .select();
+
+
+                if (error) {
+
+                    console.error(
+                        "パネル編集エラー:",
+                        error
+                    );
+
+                    alert(
+                        "パネルの編集に失敗しました。"
+                    );
+
+                    return;
+                }
+
+
+                const updatedPanel =
+                    data[0];
+
+
+                const index =
+                    panels.findIndex(
+                        function(panel) {
+
+                            return (
+                                panel.id ===
+                                updatedPanel.id
+                            );
+                        }
+                    );
+
+
+                if (index !== -1) {
+
+                    panels[index] =
+                        updatedPanel;
+                }
+
+
+                editingPanel = null;
+            }
+
+
+            panelNameInput.value = "";
+
+            panelForm.style.display =
+                "none";
+
+            displayPanels();
         }
-    });
-
-    if (editingPanel === null) {
-
-    // 新規パネル
-    panels.push({
-        name: panelName,
-        antibodies: selectedAntibodies
-    });
-
-} else {
-
-    // 既存パネルを編集
-    editingPanel.name = panelName;
-    editingPanel.antibodies = selectedAntibodies;
-
-    // 編集終了
-    editingPanel = null;
-}
-
-    // localStorageに保存
-    localStorage.setItem(
-        "panels",
-        JSON.stringify(panels)
     );
-
-    // 入力欄をリセット
-    panelNameInput.value = "";
-
-    // チェックを外す
-    checkedBoxes.forEach(function(checkbox) {
-        checkbox.checked = false;
-    });
-
-    // フォームを閉じる
-    panelForm.style.display = "none";
-
-    // パネル一覧を更新
-    displayPanels();
-});
+}
 
 
 // ====================
@@ -429,133 +1159,272 @@ function displayPanels() {
         return;
     }
 
+
     panelTable.innerHTML = "";
 
-    panels.forEach(function(panel) {
 
-        const row = document.createElement("tr");
+    panels.forEach(
+        function(panel) {
 
-        const antibodyText = panel.antibodies
-            .map(function(antibody) {
-                return `${antibody.name} (${antibody.color})`;
-            })
-            .join("<br>");
+            const row =
+                document.createElement(
+                    "tr"
+                );
 
-        row.innerHTML = `
-            <td>${panel.name}</td>
-            <td>${antibodyText}</td>
-            <td>
-                <button type="button" class="panel-edit-button">編集</button>
-                <button type="button" class="panel-copy-button">複製</button>
-                <button type="button" class="panel-delete-button">削除</button>
-            </td>
-        `;
-        // 複製ボタン
-const copyButton =
-    row.querySelector(".panel-copy-button");
 
-copyButton.addEventListener("click", function() {
+            const antibodyText =
+                panel.antibodies
+                    .map(
+                        function(
+                            antibody
+                        ) {
 
-    const copiedPanel = {
-        name: panel.name + "（コピー）",
-        antibodies: panel.antibodies.map(function(antibody) {
-            return {
-                name: antibody.name,
-                color: antibody.color,
-                maker: antibody.maker,
-                catalog: antibody.catalog,
-                stock: antibody.stock
-            };
-        })
-    };
+                            return (
+                                `${antibody.name} ` +
+                                `(${antibody.color})`
+                            );
+                        }
+                    )
 
-    panels.push(copiedPanel);
+                    .join("<br>");
 
-    // localStorageに保存
-    localStorage.setItem(
-        "panels",
-        JSON.stringify(panels)
-    );
 
-    // パネル一覧を更新
-    displayPanels();
-});
-// 編集ボタン
-const editButton =
-    row.querySelector(".panel-edit-button");
+            row.innerHTML = `
+                <td>
+                    ${panel.name}
+                </td>
 
-editButton.addEventListener("click", function() {
+                <td>
+                    ${antibodyText}
+                </td>
 
-    editingPanel = panel;
+                <td>
+                    <button
+                        type="button"
+                        class="panel-edit-button"
+                    >
+                        編集
+                    </button>
 
-    // パネル名をフォームに入れる
-    panelNameInput.value = panel.name;
+                    <button
+                        type="button"
+                        class="panel-copy-button"
+                    >
+                        複製
+                    </button>
 
-    // 抗体選択欄を作り直す
-    panelAntibodyList.innerHTML = "";
+                    <button
+                        type="button"
+                        class="panel-delete-button"
+                    >
+                        削除
+                    </button>
+                </td>
+            `;
 
-    antibodies.forEach(function(antibody) {
 
-        const label = document.createElement("label");
+            // ====================
+            // パネル編集
+            // ====================
 
-        label.innerHTML = `
-            <input type="checkbox" value="${antibody.name}">
-            ${antibody.name} (${antibody.color})
-        `;
+            const editButton =
+                row.querySelector(
+                    ".panel-edit-button"
+                );
 
-        // すでにパネルに入っている抗体ならチェック
-        const isSelected = panel.antibodies.some(function(selectedAntibody) {
-    return (
-        selectedAntibody.name === antibody.name &&
-        selectedAntibody.color === antibody.color
-    );
-});
 
-        if (isSelected) {
-            label.querySelector("input").checked = true;
-        }
+            editButton.addEventListener(
+                "click",
+                function() {
 
-        // 在庫なしを赤字にする
-        if (antibody.stock === "なし") {
-            label.classList.add("out-of-stock");
-        }
+                    editingPanel =
+                        panel;
 
-        panelAntibodyList.appendChild(label);
-        panelAntibodyList.appendChild(
-            document.createElement("br")
-        );
-    });
 
-    // フォームを表示
-    panelForm.style.display = "block";
-});
-        // 削除ボタン
-        const deleteButton =
-            row.querySelector(".panel-delete-button");
+                    panelNameInput.value =
+                        panel.name;
 
-        deleteButton.addEventListener("click", function() {
 
-            const index = panels.indexOf(panel);
+                    buildPanelAntibodyList(
+                        panel.antibodies
+                    );
 
-            panels.splice(index, 1);
 
-            // localStorageに保存
-            localStorage.setItem(
-                "panels",
-                JSON.stringify(panels)
+                    panelForm.style.display =
+                        "block";
+                }
             );
 
-            // パネル一覧を更新
-            displayPanels();
-        });
 
-        panelTable.appendChild(row);
-    });
+            // ====================
+            // パネル複製
+            // ====================
+
+            const copyButton =
+                row.querySelector(
+                    ".panel-copy-button"
+                );
+
+
+            copyButton.addEventListener(
+                "click",
+                async function() {
+
+                    const copiedPanel = {
+
+                        name:
+                            panel.name +
+                            "（コピー）",
+
+                        antibodies:
+                            panel.antibodies.map(
+                                function(
+                                    antibody
+                                ) {
+
+                                    return {
+
+                                        name:
+                                            antibody.name,
+
+                                        color:
+                                            antibody.color,
+
+                                        maker:
+                                            antibody.maker,
+
+                                        catalog:
+                                            antibody.catalog,
+
+                                        stock:
+                                            antibody.stock
+                                    };
+                                }
+                            )
+                    };
+
+
+                    const { data, error } =
+                        await supabaseClient
+
+                            .from(
+                                "panels"
+                            )
+
+                            .insert([
+                                copiedPanel
+                            ])
+
+                            .select();
+
+
+                    if (error) {
+
+                        console.error(
+                            "パネル複製エラー:",
+                            error
+                        );
+
+                        alert(
+                            "パネルの複製に失敗しました。"
+                        );
+
+                        return;
+                    }
+
+
+                    panels.push(
+                        data[0]
+                    );
+
+                    displayPanels();
+                }
+            );
+
+
+            // ====================
+            // パネル削除
+            // ====================
+
+            const deleteButton =
+                row.querySelector(
+                    ".panel-delete-button"
+                );
+
+
+            deleteButton.addEventListener(
+                "click",
+                async function() {
+
+                    const { error } =
+                        await supabaseClient
+
+                            .from(
+                                "panels"
+                            )
+
+                            .delete()
+
+                            .eq(
+                                "id",
+                                panel.id
+                            );
+
+
+                    if (error) {
+
+                        console.error(
+                            "パネル削除エラー:",
+                            error
+                        );
+
+                        alert(
+                            "パネルの削除に失敗しました。"
+                        );
+
+                        return;
+                    }
+
+
+                    panels =
+                        panels.filter(
+                            function(item) {
+
+                                return (
+                                    item.id !==
+                                    panel.id
+                                );
+                            }
+                        );
+
+
+                    displayPanels();
+                }
+            );
+
+
+            panelTable.appendChild(
+                row
+            );
+        }
+    );
 }
 
 
 // ====================
-// ページ読み込み時にパネルを表示
+// ページ読み込み時
 // ====================
 
-displayPanels();
+async function initializeApp() {
+
+    // まず抗体を取得
+    await loadAntibodies();
+
+    // panel.htmlの場合はパネルも取得
+    if (panelTable) {
+        await loadPanels();
+    }
+}
+
+
+initializeApp();
