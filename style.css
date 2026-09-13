@@ -124,6 +124,72 @@ tr:last-child td {
 
 
 /* ====================
+   抗体一覧テーブル
+   列幅固定・長い文字は「...」
+==================== */
+
+#antibody-list-table {
+    table-layout: fixed;
+}
+
+#antibody-list-table th,
+#antibody-list-table td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* 抗体名 */
+#antibody-list-table th:nth-child(1),
+#antibody-list-table td:nth-child(1) {
+    width: 22%;
+}
+
+
+/* 蛍光色 */
+#antibody-list-table th:nth-child(2),
+#antibody-list-table td:nth-child(2) {
+    width: 12%;
+}
+
+
+/* メーカー */
+#antibody-list-table th:nth-child(3),
+#antibody-list-table td:nth-child(3) {
+    width: 12%;
+}
+
+
+/* 製品番号 */
+#antibody-list-table th:nth-child(4),
+#antibody-list-table td:nth-child(4) {
+    width: 12%;
+}
+
+
+/* 在庫 */
+#antibody-list-table th:nth-child(5),
+#antibody-list-table td:nth-child(5) {
+    width: 6%;
+}
+
+
+/* 備考 */
+#antibody-list-table th:nth-child(6),
+#antibody-list-table td:nth-child(6) {
+    width: 20%;
+}
+
+
+/* 操作 */
+#antibody-list-table th:nth-child(7),
+#antibody-list-table td:nth-child(7) {
+    width: 16%;
+}
+
+
+/* ====================
    在庫なし
 ==================== */
 
