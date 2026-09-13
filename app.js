@@ -66,6 +66,9 @@ const panelTable =
 const panelNameInput =
     document.getElementById("panel-name");
 
+const panelAntibodySearch =
+    document.getElementById("panel-antibody-search");
+
 const savePanelButton =
     document.getElementById("save-panel-button");
 
@@ -152,17 +155,20 @@ function displayAntibodies() {
 
 
     const standardColors = [
+        "Biotin",
         "BV421",
-        "APC",
-        "PE",
-        "FITC",
         "BV510",
         "BV605",
-        "BV711",
-        "BV786",
-        "PerCP-Cy5.5",
+        "FITC",
+        "AF488",
+        "PerCP-Cy5",
+        "PE",
+        "PE-Cy5",
         "PE-Cy7",
-        "APC-Cy7"
+        "APC",
+        "APC-Cy7",
+        "AF647",
+        "Purified"
     ];
 
 
@@ -286,17 +292,20 @@ function displayAntibodies() {
 
 
                     const standardColors = [
-                        "BV421",
-                        "APC",
-                        "PE",
-                        "FITC",
-                        "BV510",
-                        "BV605",
-                        "BV711",
-                        "BV786",
-                        "PerCP-Cy5.5",
-                        "PE-Cy7",
-                        "APC-Cy7"
+                        "Biotin",
+                         "BV421",
+                         "BV510",
+                         "BV605",
+                         "FITC",
+                         "AF488",
+                         "PerCP-Cy5",
+                         "PE",
+                         "PE-Cy5",
+                         "PE-Cy7",
+                         "APC",
+                         "APC-Cy7",
+                         "AF647",
+                         "Purified"
                     ];
 
 
@@ -629,7 +638,7 @@ if (saveButton) {
             ) {
 
                 alert(
-                    "カタログ番号を入力してください。"
+                    "製品番号を入力してください。"
                 );
 
                 return;
@@ -830,12 +839,66 @@ function buildPanelAntibodyList(
         return;
     }
 
-
     panelAntibodyList.innerHTML = "";
+
+
+    // ====================
+    // 同じ抗体名＋蛍光色を1つにまとめる
+    // ====================
+
+    const uniqueAntibodies = [];
+
+    const seen = new Set();
 
 
     antibodies.forEach(
         function(antibody) {
+
+            const key =
+                antibody.name
+                    .trim()
+                    .toLowerCase()
+                + "|||"
+                + antibody.color
+                    .trim()
+                    .toLowerCase();
+
+
+            if (!seen.has(key)) {
+
+                seen.add(key);
+
+                uniqueAntibodies.push(
+                    antibody
+                );
+            }
+        }
+    );
+
+
+    // ====================
+    // パネル選択欄を作成
+    // ====================
+
+    uniqueAntibodies.forEach(
+        function(antibody) {
+
+            const item =
+                document.createElement("div");
+
+            item.classList.add(
+                "panel-antibody-item"
+            );
+
+
+            // 検索用文字列
+            item.dataset.search =
+                (
+                    antibody.name +
+                    " " +
+                    antibody.color
+                ).toLowerCase();
+
 
             const label =
                 document.createElement(
@@ -859,6 +922,7 @@ function buildPanelAntibodyList(
                 );
 
 
+            // 編集時に保存済み抗体へチェックを戻す
             const isSelected =
                 selectedAntibodies.some(
                     function(
@@ -890,14 +954,10 @@ function buildPanelAntibodyList(
             }
 
 
-            panelAntibodyList.appendChild(
-                label
-            );
+            item.appendChild(label);
 
             panelAntibodyList.appendChild(
-                document.createElement(
-                    "br"
-                )
+                item
             );
         }
     );
@@ -911,20 +971,77 @@ function buildPanelAntibodyList(
 if (createPanelButton) {
 
     createPanelButton.addEventListener(
-        "click",
+    "click",
+    function() {
+
+        editingPanel = null;
+
+        panelNameInput.value = "";
+
+        if (panelAntibodySearch) {
+            panelAntibodySearch.value = "";
+        }
+
+        buildPanelAntibodyList();
+
+        panelForm.style.display =
+            "block";
+    }
+);
+
+            // ====================
+// パネル抗体検索
+// ====================
+
+if (panelAntibodySearch) {
+
+    panelAntibodySearch.addEventListener(
+        "input",
         function() {
 
-            editingPanel = null;
+            const keyword =
+                panelAntibodySearch
+                    .value
+                    .trim()
+                    .toLowerCase();
 
-            panelNameInput.value = "";
 
-            buildPanelAntibodyList();
+            const items =
+                panelAntibodyList
+                    .querySelectorAll(
+                        ".panel-antibody-item"
+                    );
 
-            panelForm.style.display =
-                "block";
+
+            items.forEach(
+                function(item) {
+
+                    const searchText =
+                        item.dataset.search;
+
+
+                    if (
+                        searchText.includes(
+                            keyword
+                        )
+                    ) {
+
+                        item.style.display =
+                            "";
+
+                    } else {
+
+                        item.style.display =
+                            "none";
+                    }
+                }
+            );
         }
     );
 }
+            panelForm.style.display =
+                "block";
+        }
 
 
 // ====================
@@ -1243,6 +1360,10 @@ function displayPanels() {
 
                     panelNameInput.value =
                         panel.name;
+
+                        if (panelAntibodySearch) {
+    panelAntibodySearch.value = "";
+}
 
 
                     buildPanelAntibodyList(
