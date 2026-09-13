@@ -22,7 +22,7 @@
     <option value="AF488">AF488</option>
     <option value="PerCP-Cy5">PerCP-Cy5</option>
     <option value="PE">PE</option>
-    <option value="PE-Cy5">PE-Cy5</option>
+    <option value="PE-Cy5.5">PE-Cy5.5</option>
     <option value="PE-Cy7">PE-Cy7/option>
     <option value="APC">APC</option>
     <option value="APC-Cy7">APC-Cy7</option>
@@ -59,7 +59,7 @@
         <option value="BV605">BV605</option>
         <option value="FITC">FITC</option>
         <option value="AF488">AF488</option>
-        <option value="PerCP-Cy5">PerCP-Cy5</option>
+        <option value="PerCP-Cy5.5">PerCP-Cy5.5</option>
         <option value="PE">PE</option>
         <option value="PE-Cy5">PE-Cy5</option>
         <option value="PE-Cy7">PE-Cy7/option>
@@ -84,6 +84,11 @@
         <option value="あり">在庫あり</option>
         <option value="なし">在庫なし</option>
     </select>
+    <textarea
+    id="new-note"
+    placeholder="備考（任意）"
+    rows="3"
+></textarea>
 
     <button type="button" id="save-antibody-button">追加</button>
 </div>
@@ -95,6 +100,7 @@
             <th>メーカー</th>
             <th>製品番号</th>
             <th>在庫</th>
+            <th>備考</th>
             <th>操作</th>
         </tr>
     </thead>
