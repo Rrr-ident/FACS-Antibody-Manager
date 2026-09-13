@@ -256,6 +256,15 @@ function displayAntibodies() {
                 </td>
             `;
 
+            const cells = row.querySelectorAll("td");
+
+cells[0].title = antibody.name || "";
+cells[1].title = antibody.color || "";
+cells[2].title = antibody.maker || "";
+cells[3].title = antibody.catalog || "";
+cells[4].title = antibody.stock || "";
+cells[5].title = antibody.note || "";
+
 
             // 在庫なしを赤字
             if (
@@ -383,6 +392,14 @@ function displayAntibodies() {
             deleteButton.addEventListener(
                 "click",
                 async function() {
+
+                const confirmed = confirm(
+    `「${antibody.name} (${antibody.color})」を本当に削除しますか？`
+);
+
+if (!confirmed) {
+    return;
+}
 
                     const { error } =
                         await supabaseClient
@@ -1480,73 +1497,80 @@ function displayPanels() {
 
 
             // ====================
-            // パネル削除
-            // ====================
+// パネル削除
+// ====================
 
-            const deleteButton =
-                row.querySelector(
-                    ".panel-delete-button"
+const deleteButton =
+    row.querySelector(
+        ".panel-delete-button"
+    );
+
+
+deleteButton.addEventListener(
+    "click",
+    async function() {
+
+        const confirmed = confirm(
+            `「${panel.name}」を本当に削除しますか？`
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        const { error } =
+            await supabaseClient
+
+                .from(
+                    "panels"
+                )
+
+                .delete()
+
+                .eq(
+                    "id",
+                    panel.id
                 );
 
 
-            deleteButton.addEventListener(
-                "click",
-                async function() {
+        if (error) {
 
-                    const { error } =
-                        await supabaseClient
+            console.error(
+                "パネル削除エラー:",
+                error
+            );
 
-                            .from(
-                                "panels"
-                            )
+            alert(
+                "パネルの削除に失敗しました。"
+            );
 
-                            .delete()
-
-                            .eq(
-                                "id",
-                                panel.id
-                            );
+            return;
+        }
 
 
-                    if (error) {
+        panels =
+            panels.filter(
+                function(item) {
 
-                        console.error(
-                            "パネル削除エラー:",
-                            error
-                        );
-
-                        alert(
-                            "パネルの削除に失敗しました。"
-                        );
-
-                        return;
-                    }
-
-
-                    panels =
-                        panels.filter(
-                            function(item) {
-
-                                return (
-                                    item.id !==
-                                    panel.id
-                                );
-                            }
-                        );
-
-
-                    displayPanels();
+                    return (
+                        item.id !==
+                        panel.id
+                    );
                 }
             );
 
 
-            panelTable.appendChild(
-                row
-            );
+        displayPanels();
+    }
+);
+
+
+panelTable.appendChild(
+    row
+);
         }
     );
 }
-
 
 // ====================
 // ページ読み込み時
