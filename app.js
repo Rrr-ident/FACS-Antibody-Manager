@@ -237,6 +237,7 @@ function displayAntibodies() {
                 <td>${antibody.maker}</td>
                 <td>${antibody.catalog}</td>
                 <td>${antibody.stock}</td>
+                <td>${antibody.note || ""}</td>
 
                 <td>
                     <button
@@ -352,6 +353,11 @@ function displayAntibodies() {
                         "new-stock"
                     ).value =
                         antibody.stock;
+
+                     document.getElementById(
+                     "new-note"
+                    ).value =
+                    antibody.note || "";
 
 
                     saveButton.textContent =
@@ -491,6 +497,10 @@ if (
                 "new-stock"
             ).value = "あり";
 
+            document.getElementById(
+             "new-note"
+            ).value = "";
+
             saveButton.textContent =
                 "追加";
 
@@ -589,7 +599,15 @@ if (saveButton) {
                         .getElementById(
                             "new-stock"
                         )
-                        .value
+                        .value,
+
+                note:
+                    document
+                        .getElementById(
+                           "new-note"
+                         )
+                         .value
+                        .trim()
             };
 
 
