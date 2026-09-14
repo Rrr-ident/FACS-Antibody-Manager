@@ -161,7 +161,7 @@ function displayAntibodies() {
         "BV605",
         "FITC",
         "AF488",
-        "PerCP-Cy5",
+        "PerCP-Cy5.5",
         "PE",
         "PE-Cy5",
         "PE-Cy7",
